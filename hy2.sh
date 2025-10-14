@@ -1,62 +1,43 @@
 
 #!/bin/sh
-# Hysteria2 Alpine安装脚本 (交互式端口配置+Bing证书伪装)
+# Hysteria2服务端安装脚本 for Alpine Linux
+# 功能：自签证书+OpenRC守护进程+多端口跳跃
 CONFIG_DIR="/etc/hysteria2"
 BIN_PATH="/usr/local/bin/hysteria"
 
-# 检测root权限
-if [ "$(id -u)" != "0" ]; then
-    echo "错误：必须使用root权限运行此脚本" >&2
-    exit 1
-fi
-
 # 安装依赖
-apk add --no-cache openssl wget curl
+apk add --no-cache openssl wget
 
-# 交互式配置
-read -p "请输入监听端口 (默认443): " PORT
-PORT=${PORT:-443}
-
-read -p "设置认证密码 (留空自动生成): " AUTH_PWD
-if [ -z "$AUTH_PWD" ]; then
-    AUTH_PWD=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
-fi
-
-# 创建配置目录
+# 创建自签证书
 mkdir -p $CONFIG_DIR
-
-# 生成Bing伪装证书
 openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
     -keyout $CONFIG_DIR/server.key -out $CONFIG_DIR/server.crt \
-    -subj "/CN=www.bing.com" -days 3650
+    -subj "/CN=hy2-server" -days 3650
 
 # 下载最新二进制
-HY2_VER=$(curl -sSL "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-curl -sSL "https://github.com/apernet/hysteria/releases/download/$HY2_VER/hysteria-linux-amd64" -o $BIN_PATH
+HY2_VER=$(wget -qO- "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+wget -O $BIN_PATH "https://github.com/apernet/hysteria/releases/download/$HY2_VER/hysteria-linux-amd64"
 chmod +x $BIN_PATH
 
 # 生成配置文件
 cat > $CONFIG_DIR/config.yaml <<EOF
-listen: :$PORT
+listen: :13588
 tls:
   cert: $CONFIG_DIR/server.crt
   key: $CONFIG_DIR/server.key
 auth:
   type: password
-  password: $AUTH_PWD
+  password: $(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
 obfs:
   type: salamander
   salamander:
     password: $(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
-masquerade:
-  type: host
-  host:
-    protocol: https
-    host: www.bing.com
-    port: 443
+bandwidth:
+  up: 1 gbps
+  down: 1 gbps
 EOF
 
-# OpenRC服务配置
+# 创建OpenRC服务
 cat > /etc/init.d/hysteria <<EOF
 #!/sbin/openrc-run
 name="Hysteria2 Proxy Server"
@@ -75,12 +56,10 @@ chmod +x /etc/init.d/hysteria
 rc-update add hysteria default
 rc-service hysteria start
 
-# 输出配置信息
-IP=$(curl -4sSL ifconfig.me)
-echo "=== 安装完成 ==="
-echo "服务器IP: $IP"
-echo "端口: $PORT"
-echo "密码: $AUTH_PWD"
+# 输出客户端配置
+echo "=== 客户端配置 ==="
+echo "服务器IP: $(wget -qO- ifconfig.me)"
+echo "端口: 13588"
+echo "密码: $(grep password $CONFIG_DIR/config.yaml | awk '{print $2}')"
 echo "混淆密码: $(grep salamander -A2 $CONFIG_DIR/config.yaml | tail -n1 | awk '{print $2}')"
-echo "证书伪装: www.bing.com"
-echo "服务管理: rc-service hysteria [start|stop|restart]"
+echo "自签证书需手动关闭验证"
