@@ -21,7 +21,7 @@ chmod +x $BIN_PATH
 
 # 生成配置文件
 cat > $CONFIG_DIR/config.yaml <<EOF
-listen: :13588
+listen: :19520
 tls:
   cert: $CONFIG_DIR/server.crt
   key: $CONFIG_DIR/server.key
@@ -59,7 +59,7 @@ rc-service hysteria start
 # 输出客户端配置
 echo "=== 客户端配置 ==="
 echo "服务器IP: $(wget -qO- ifconfig.me)"
-echo "端口: 13588"
+echo "端口: 19520"
 echo "密码: $(grep password $CONFIG_DIR/config.yaml | awk '{print $2}')"
 echo "混淆密码: $(grep salamander -A2 $CONFIG_DIR/config.yaml | tail -n1 | awk '{print $2}')"
 echo "自签证书需手动关闭验证"
