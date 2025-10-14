@@ -8,9 +8,9 @@ curl -sSL https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/hy2-in
 
 ## 说明：  
 配置文件：/etc/hysteria/config.yaml  
-使用自签名证书，默认端口13588，安全tls，SNI为：空
-跳过证书验证 true
-随系统自启动
+使用www.bing.com自签名证书
+跳过证书验证 设置true
+
 
 以下是基于Alpine Linux系统、使用自签证书并集成OpenRC进程守护的Hysteria2服务端脚本实现方案:
 
