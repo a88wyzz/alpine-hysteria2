@@ -3,9 +3,8 @@
 
 ## 一键食用
 ```
-wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/hy2.sh  && sh hy2.sh
+curl -sSL https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/hy2-install.sh | sh
 ```
-重复执行，会覆盖密码。  
 
 ## 说明：  
 配置文件：/etc/hysteria/config.yaml  
