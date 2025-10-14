@@ -19,7 +19,7 @@
 通过执行脚本
 
 ```
-curl -sSL https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/hy2-install.sh | sh
+wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/hy2.sh  && sh hy2.sh
 ```
 
 按提示输入端口和密码（直接回车使用默认值）
