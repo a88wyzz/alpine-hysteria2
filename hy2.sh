@@ -1,89 +1,86 @@
-#!/bin/bash
 
-apk add wget curl git openssh openssl openrc
+#!/bin/sh
+# Hysteria2 Alpine安装脚本 (交互式端口配置+Bing证书伪装)
+CONFIG_DIR="/etc/hysteria2"
+BIN_PATH="/usr/local/bin/hysteria"
 
-generate_random_password() {
-  dd if=/dev/random bs=18 count=1 status=none | base64
-}
+# 检测root权限
+if [ "$(id -u)" != "0" ]; then
+    echo "错误：必须使用root权限运行此脚本" >&2
+    exit 1
+fi
 
-GENPASS="$(generate_random_password)"
+# 安装依赖
+apk add --no-cache openssl wget curl
 
-echo_hysteria_config_yaml() {
-  cat << EOF
-listen: :19520
+# 交互式配置
+read -p "请输入监听端口 (默认443): " PORT
+PORT=${PORT:-443}
 
+read -p "设置认证密码 (留空自动生成): " AUTH_PWD
+if [ -z "$AUTH_PWD" ]; then
+    AUTH_PWD=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
+fi
 
-#有域名，使用CA证书
-#acme:
-#  domains:
-#    - test.heybro.bid #你的域名，需要先解析到服务器ip
-#  email: xxx@gmail.com
+# 创建配置目录
+mkdir -p $CONFIG_DIR
 
-#使用自签名证书
+# 生成Bing伪装证书
+openssl req -x509 -nodes -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+    -keyout $CONFIG_DIR/server.key -out $CONFIG_DIR/server.crt \
+    -subj "/CN=www.bing.com" -days 3650
+
+# 下载最新二进制
+HY2_VER=$(curl -sSL "https://api.github.com/repos/apernet/hysteria/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+curl -sSL "https://github.com/apernet/hysteria/releases/download/$HY2_VER/hysteria-linux-amd64" -o $BIN_PATH
+chmod +x $BIN_PATH
+
+# 生成配置文件
+cat > $CONFIG_DIR/config.yaml <<EOF
+listen: :$PORT
 tls:
-  cert: /etc/hysteria/server.crt
-  key: /etc/hysteria/server.key
-
+  cert: $CONFIG_DIR/server.crt
+  key: $CONFIG_DIR/server.key
 auth:
   type: password
-  password: $GENPASS
-
+  password: $AUTH_PWD
+obfs:
+  type: salamander
+  salamander:
+    password: $(tr -dc A-Za-z0-9 </dev/urandom | head -c 16)
 masquerade:
-  type: proxy
-  proxy:
-    url: https://bing.com/
-    rewriteHost: true
+  type: host
+  host:
+    protocol: https
+    host: www.bing.com
+    port: 443
 EOF
-}
 
-echo_hysteria_autoStart(){
-  cat << EOF
+# OpenRC服务配置
+cat > /etc/init.d/hysteria <<EOF
 #!/sbin/openrc-run
-
-name="hysteria"
-
-command="/usr/local/bin/hysteria"
-command_args="server --config /etc/hysteria/config.yaml"
-
-pidfile="/var/run/${name}.pid"
-
-command_background="yes"
-
+name="Hysteria2 Proxy Server"
+command="$BIN_PATH"
+command_args="server --config $CONFIG_DIR/config.yaml"
+command_background=true
+pidfile="/run/hysteria.pid"
+start_stop_daemon_args="--make-pidfile"
 depend() {
-        need networking
+    need net
 }
-
 EOF
-}
-
-
-wget -O /usr/local/bin/hysteria https://download.hysteria.network/app/latest/hysteria-linux-amd64  --no-check-certificate
-chmod +x /usr/local/bin/hysteria
-
-mkdir -p /etc/hysteria/
-
-openssl req -x509 -nodes -newkey ec:<(openssl ecparam -name prime256v1) -keyout /etc/hysteria/server.key -out /etc/hysteria/server.crt -subj "/CN=bing.com" -days 36500
-
-#写配置文件
-echo_hysteria_config_yaml > "/etc/hysteria/config.yaml"
-
-#写自启动
-echo_hysteria_autoStart > "/etc/init.d/hysteria"
 chmod +x /etc/init.d/hysteria
-#启用自启动
-rc-update add hysteria
 
-service hysteria start
+# 启动服务
+rc-update add hysteria default
+rc-service hysteria start
 
-#启动hy2
-#/usr/local/bin/hysteria  server --config /etc/hysteria/config.yaml &
-
-echo "------------------------------------------------------------------------"
-echo "hysteria2已经安装完成"
-echo "默认端口： 19520 ， 密码为： $GENPASS ，工具中配置：tls，SNI为： bing.com"
-echo "配置文件：/etc/hysteria/config.yaml"
-echo "已经随系统自动启动"
-echo "看状态 service hysteria status"
-echo "重启 service hysteria restart"
-echo "请享用。"
-echo "------------------------------------------------------------------------"
+# 输出配置信息
+IP=$(curl -4sSL ifconfig.me)
+echo "=== 安装完成 ==="
+echo "服务器IP: $IP"
+echo "端口: $PORT"
+echo "密码: $AUTH_PWD"
+echo "混淆密码: $(grep salamander -A2 $CONFIG_DIR/config.yaml | tail -n1 | awk '{print $2}')"
+echo "证书伪装: www.bing.com"
+echo "服务管理: rc-service hysteria [start|stop|restart]"
