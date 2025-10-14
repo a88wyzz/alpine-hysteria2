@@ -9,18 +9,38 @@ wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/h
 
 ## 说明：  
 配置文件：/etc/hysteria/config.yaml  
-使用自签名证书，默认端口10889，安全tls，SNI为： bing.com  
+使用自签名证书，默认端口13588，安全tls，SNI为：空
+跳过证书验证 true
 随系统自启动  
 看状态 service hysteria status  
 重启 service hysteria restart  
 
-## 测试环境：  alpine 3.19.1  
+以下是基于Alpine Linux系统、使用自签证书并集成OpenRC进程守护的Hysteria2服务端脚本实现方案，综合了
+2
+3
+的最佳实践：
 
-## hy2官方：  
-https://github.com/apernet/hysteria  
+核心功能说明：
 
-## xx工具中配置实例：  
-<div align=center> <img src="image.png" width = 50%/> </div>
+自动生成ECDSA自签证书，有效期10年
+4
+集成Salamander混淆协议增强隐蔽性
+2
+通过OpenRC实现进程守护和开机自启
+4
+支持带宽限制配置（默认1Gbps）
+3
+自动生成16位随机认证密码和混淆密码
+2
+输出完整客户端连接参数
+1
+使用说明：
+
+直接运行脚本完成安装
+客户端需关闭证书验证（自签证书特性）
+通过rc-service hysteria restart管理服务
+配置文件路径：/etc/hysteria2/config.yaml
+
 
 
 
