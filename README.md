@@ -29,9 +29,13 @@ wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/h
 6.输出完整客户端连接参数
 
 使用说明：
+
 直接运行脚本完成安装
+
 客户端需关闭证书验证（自签证书特性）
+
 通过rc-service hysteria restart管理服务
+
 配置文件路径：/etc/hysteria2/config.yaml
 
 
