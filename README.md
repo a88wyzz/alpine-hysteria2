@@ -9,5 +9,7 @@ wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/h
 
 客户端配置时需关闭证书验证（自签证书特性）
 
+默认端口19520  自己fork更改
+
 
 
