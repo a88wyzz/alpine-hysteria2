@@ -6,12 +6,19 @@
 ```
 wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/hy2.sh  && sh hy2.sh
 ```
+
 说明：
+
 配置文件：/etc/hysteria/config.yaml
-使用自签名证书，默认端口19520，传输安全tls，SNI为：www.bing.com
+
+使用自签名证书，默认端口19520，传输安全tls，SNI为：bing.com
+
 客户端配置时需关闭证书验证（自签证书特性）
+
 随系统自启动
+
 看状态 service hysteria status
+
 重启 service hysteria restart
 
 
