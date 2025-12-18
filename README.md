@@ -17,7 +17,7 @@ wget -O hy2.sh https://raw.githubusercontent.com/a88wyzz/alpine-hysteria2/main/h
 
 默认端口19520 (可自行修改配置文件的端口后执行重启生效)
 
-随系统自启动
+脚本已设置HY2随系统自动启动
 
 查看状态 service hysteria status
 
